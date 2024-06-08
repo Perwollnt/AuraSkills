@@ -7,11 +7,15 @@ import dev.aurelium.auraskills.bukkit.hooks.WorldGuardHook;
 import dev.aurelium.auraskills.bukkit.source.BlockLeveler;
 import dev.aurelium.auraskills.bukkit.util.BlockFaceUtil;
 import dev.aurelium.auraskills.common.config.Option;
+import dev.lone.itemsadder.api.Events.CustomBlockBreakEvent;
+import dev.lone.itemsadder.api.Events.CustomBlockPlaceEvent;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -21,6 +25,7 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.world.StructureGrowEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,21 +43,18 @@ public class RegionBlockListener implements Listener {
         this.blockLeveler = plugin.getLevelManager().getLeveler(BlockLeveler.class);
     }
 
-    @EventHandler
-    public void checkPlace(BlockPlaceEvent event) {
+    public void checkPlace(Block block) {
         // Checks if world is blocked
-        if (plugin.getWorldManager().isCheckReplaceDisabled(event.getBlock().getLocation())) {
+        if (plugin.getWorldManager().isCheckReplaceDisabled(block.getLocation())) {
             return;
         }
         // Checks if region is blocked
         if (plugin.getHookManager().isRegistered(WorldGuardHook.class)) {
-            if (plugin.getHookManager().getHook(WorldGuardHook.class).isInBlockedCheckRegion(event.getBlock().getLocation())) {
+            if (plugin.getHookManager().getHook(WorldGuardHook.class).isInBlockedCheckRegion(block.getLocation())) {
                 return;
             }
         }
         if (!plugin.configBoolean(Option.CHECK_BLOCK_REPLACE_ENABLED)) return;
-
-        Block block = event.getBlock();
 
         SkillSource<BlockXpSource> skillSource = blockLeveler.getSource(block, BlockXpSource.BlockTriggers.BREAK);
 
@@ -67,6 +69,16 @@ public class RegionBlockListener implements Listener {
         }
 
         regionManager.addPlacedBlock(block);
+    }
+
+    @EventHandler()
+    public void checkPlaceIA(CustomBlockPlaceEvent event) {
+        this.checkPlace(event.getBlock());
+    }
+
+    @EventHandler
+    public void checkPlace(BlockPlaceEvent event) {
+        this.checkPlace(event.getBlock());
     }
 
     @EventHandler

@@ -25,6 +25,9 @@ dependencies {
     compileOnly("net.luckperms:api:5.4")
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation(platform("org.junit:junit-bom:5.9.3"))
+
+    // ItemsAdder dummy api thingy
+    compileOnly("com.github.LoneDev6:API-ItemsAdder:3.6.3-beta-14")
 }
 
 tasks.withType<JavaCompile> {

@@ -8,6 +8,8 @@ import dev.aurelium.auraskills.bukkit.region.BukkitBlock;
 import dev.aurelium.auraskills.common.region.BlockPosition;
 import dev.aurelium.auraskills.common.source.SourceTypes;
 import dev.aurelium.auraskills.common.user.User;
+import dev.lone.itemsadder.api.Events.CustomBlockBreakEvent;
+import dev.lone.itemsadder.api.Events.CustomBlockPlaceEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -179,6 +181,19 @@ public class BrewingLeveler extends SourceLeveler {
             return;
         }
         block.setMetadata("skillsBrewingStandOwner", new FixedMetadataValue(plugin, event.getPlayer().getUniqueId()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBrewingStandPlaceIA(CustomBlockPlaceEvent event) {
+        if (disabled()) return;
+        Block block = event.getBlock();
+        if (block.getType() != Material.BREWING_STAND) {
+            return;
+        }
+
+        if(block.hasMetadata("skillsBrewingStandOwner")) {
+            block.setMetadata("skillsBrewingStandOwner", new FixedMetadataValue(plugin, event.getPlayer().getUniqueId()));
+        }
     }
 
     // Un-marks brewing stand as owned by player when broken

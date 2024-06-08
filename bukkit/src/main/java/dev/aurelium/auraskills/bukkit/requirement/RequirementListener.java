@@ -10,7 +10,10 @@ import dev.aurelium.auraskills.common.message.MessageKey;
 import dev.aurelium.auraskills.common.message.type.CommandMessage;
 import dev.aurelium.auraskills.common.util.math.RomanNumber;
 import dev.aurelium.auraskills.common.util.text.TextUtil;
+import dev.lone.itemsadder.api.Events.CustomBlockBreakEvent;
+import dev.lone.itemsadder.api.Events.CustomBlockPlaceEvent;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -19,6 +22,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.Locale;
 import java.util.Map;
@@ -98,6 +102,17 @@ public class RequirementListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlace(BlockPlaceEvent event) {
+        if (event.isCancelled()) return;
+        if (plugin.configBoolean(Option.REQUIREMENT_ITEM_PREVENT_BLOCK_PLACE)) {
+            Player player = event.getPlayer();
+            ItemStack item = event.getItemInHand();
+            if (item.getType() == Material.AIR) return;
+            checkItemRequirements(player, item, event);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlaceIA(CustomBlockPlaceEvent event) {
         if (event.isCancelled()) return;
         if (plugin.configBoolean(Option.REQUIREMENT_ITEM_PREVENT_BLOCK_PLACE)) {
             Player player = event.getPlayer();

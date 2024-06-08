@@ -46,6 +46,9 @@ dependencies {
     compileOnly("com.github.Slimefun:Slimefun4:RC-37")
     compileOnly("com.mojang:authlib:1.5.25")
     compileOnly("io.lumine:Mythic-Dist:5.6.1")
+
+    // ItemsAdder dummy api thingy
+    compileOnly("com.github.LoneDev6:API-ItemsAdder:3.6.3-beta-14")
 }
 
 tasks.withType<ShadowJar> {
