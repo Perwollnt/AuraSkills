@@ -7,15 +7,12 @@ import dev.aurelium.auraskills.bukkit.hooks.WorldGuardHook;
 import dev.aurelium.auraskills.bukkit.source.BlockLeveler;
 import dev.aurelium.auraskills.bukkit.util.BlockFaceUtil;
 import dev.aurelium.auraskills.common.config.Option;
-import dev.lone.itemsadder.api.Events.CustomBlockBreakEvent;
 import dev.lone.itemsadder.api.Events.CustomBlockPlaceEvent;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -25,7 +22,6 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.world.StructureGrowEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,7 +39,7 @@ public class RegionBlockListener implements Listener {
         this.blockLeveler = plugin.getLevelManager().getLeveler(BlockLeveler.class);
     }
 
-    public void checkPlace(Block block) {
+    public static void checkPlace(Block block, AuraSkills plugin, BlockLeveler blockLeveler, BukkitRegionManager regionManager) {
         // Checks if world is blocked
         if (plugin.getWorldManager().isCheckReplaceDisabled(block.getLocation())) {
             return;
@@ -71,14 +67,9 @@ public class RegionBlockListener implements Listener {
         regionManager.addPlacedBlock(block);
     }
 
-    @EventHandler()
-    public void checkPlaceIA(CustomBlockPlaceEvent event) {
-        this.checkPlace(event.getBlock());
-    }
-
     @EventHandler
     public void checkPlace(BlockPlaceEvent event) {
-        this.checkPlace(event.getBlock());
+        checkPlace(event.getBlock(), plugin, blockLeveler, regionManager);
     }
 
     @EventHandler
@@ -205,6 +196,25 @@ public class RegionBlockListener implements Listener {
                     }
                 }.runTaskLater(plugin, 1);
             }
+        }
+    }
+
+    // optional class to handle ItemsAdder custom block events
+    public static class ItemsAdderAddon implements Listener {
+
+        private final AuraSkills plugin;
+        private final BukkitRegionManager regionManager;
+        private final BlockLeveler blockLeveler;
+
+        public ItemsAdderAddon(AuraSkills plugin) {
+            this.plugin = plugin;
+            this.regionManager = plugin.getRegionManager();
+            this.blockLeveler = plugin.getLevelManager().getLeveler(BlockLeveler.class);
+        }
+
+        @EventHandler()
+        public void checkPlaceIA(CustomBlockPlaceEvent event) {
+            checkPlace(event.getBlock(), plugin, blockLeveler, regionManager);
         }
     }
 }

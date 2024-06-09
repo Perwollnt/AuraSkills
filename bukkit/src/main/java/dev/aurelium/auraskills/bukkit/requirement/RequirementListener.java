@@ -10,10 +10,8 @@ import dev.aurelium.auraskills.common.message.MessageKey;
 import dev.aurelium.auraskills.common.message.type.CommandMessage;
 import dev.aurelium.auraskills.common.util.math.RomanNumber;
 import dev.aurelium.auraskills.common.util.text.TextUtil;
-import dev.lone.itemsadder.api.Events.CustomBlockBreakEvent;
 import dev.lone.itemsadder.api.Events.CustomBlockPlaceEvent;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -22,7 +20,6 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.Locale;
 import java.util.Map;
@@ -112,17 +109,6 @@ public class RequirementListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onPlaceIA(CustomBlockPlaceEvent event) {
-        if (event.isCancelled()) return;
-        if (plugin.configBoolean(Option.REQUIREMENT_ITEM_PREVENT_BLOCK_PLACE)) {
-            Player player = event.getPlayer();
-            ItemStack item = event.getItemInHand();
-            if (item.getType() == Material.AIR) return;
-            checkItemRequirements(player, item, event);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
     public void onAttack(EntityDamageByEntityEvent event) {
         if (event.isCancelled()) return;
         if (plugin.configBoolean(Option.REQUIREMENT_ITEM_PREVENT_WEAPON_USE)) {
@@ -173,6 +159,70 @@ public class RequirementListener implements Listener {
                 sendMessage(CommandMessage.ITEM_REQUIREMENT_USE, CommandMessage.ITEM_REQUIREMENT_ENTRY, ModifierType.ITEM, player, locale, item);
                 manager.getErrorMessageTimer().put(player.getUniqueId(), 8);
             }
+        }
+    }
+
+    // optional class to handle ItemsAdder custom block events
+    public static class ItemsAdderAddon implements Listener {
+
+        private final AuraSkills plugin;
+        private final RequirementManager manager;
+
+        public ItemsAdderAddon(AuraSkills plugin) {
+            this.plugin = plugin;
+            this.manager = plugin.getRequirementManager();
+        }
+
+        @EventHandler(priority = EventPriority.HIGH)
+        public void onPlaceIA(CustomBlockPlaceEvent event) {
+            if (event.isCancelled()) return;
+            if (plugin.configBoolean(Option.REQUIREMENT_ITEM_PREVENT_BLOCK_PLACE)) {
+                Player player = event.getPlayer();
+                ItemStack item = event.getItemInHand();
+                if (item.getType() == Material.AIR) return;
+                checkItemRequirements(player, item, event);
+            }
+        }
+
+        private void checkItemRequirements(Player player, ItemStack item, Cancellable event) {
+            SkillsItem skillsItem = new SkillsItem(item, plugin);
+            if (!skillsItem.meetsRequirements(ModifierType.ITEM, player)) {
+                Locale locale = plugin.getUser(player).getLocale();
+                event.setCancelled(true);
+                Integer timer = manager.getErrorMessageTimer().get(player.getUniqueId());
+                if (timer != null) {
+                    if (timer.equals(0)) {
+                        sendMessage(CommandMessage.ITEM_REQUIREMENT_USE, CommandMessage.ITEM_REQUIREMENT_ENTRY, ModifierType.ITEM, player, locale, item);
+                        manager.getErrorMessageTimer().put(player.getUniqueId(), 8);
+                    }
+                } else {
+                    sendMessage(CommandMessage.ITEM_REQUIREMENT_USE, CommandMessage.ITEM_REQUIREMENT_ENTRY, ModifierType.ITEM, player, locale, item);
+                    manager.getErrorMessageTimer().put(player.getUniqueId(), 8);
+                }
+            }
+        }
+
+        private void sendMessage(MessageKey baseMessage, MessageKey entryMessage, ModifierType modifierType, Player player, Locale locale, ItemStack item) {
+            // Build requirements message that shows skills and levels
+            StringBuilder requirementsString = new StringBuilder();
+            SkillsItem skillsItem = new SkillsItem(item, plugin);
+
+            Map<Skill, Integer> requirementMap = skillsItem.getRequirements(modifierType);
+            for (Map.Entry<Skill, Integer> entry : requirementMap.entrySet()) {
+                requirementsString.append(TextUtil.replace(plugin.getMsg(entryMessage, locale),
+                        "{skill}", entry.getKey().getDisplayName(locale), "{level}", RomanNumber.toRoman(entry.getValue(), plugin)));
+            }
+            Map<Skill, Integer> globalRequirementMap = skillsItem.getGlobalRequirements(modifierType);
+            for (Map.Entry<Skill, Integer> entry : globalRequirementMap.entrySet()) {
+                requirementsString.append(TextUtil.replace(plugin.getMsg(entryMessage, locale),
+                        "{skill}", entry.getKey().getDisplayName(locale), "{level}", RomanNumber.toRoman(entry.getValue(), plugin)));
+            }
+            if (requirementsString.length() >= 2) {
+                requirementsString.delete(requirementsString.length() - 2, requirementsString.length());
+            }
+
+            player.sendMessage(plugin.getPrefix(locale) + TextUtil.replace(plugin.getMsg(baseMessage, locale)
+                    , "{requirements}", requirementsString.toString()));
         }
     }
 

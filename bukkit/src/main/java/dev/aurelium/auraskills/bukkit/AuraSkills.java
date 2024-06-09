@@ -49,6 +49,8 @@ import dev.aurelium.auraskills.bukkit.requirement.RequirementListener;
 import dev.aurelium.auraskills.bukkit.requirement.RequirementManager;
 import dev.aurelium.auraskills.bukkit.reward.BukkitRewardManager;
 import dev.aurelium.auraskills.bukkit.scheduler.BukkitScheduler;
+import dev.aurelium.auraskills.bukkit.source.BrewingLeveler;
+import dev.aurelium.auraskills.bukkit.source.SourceLeveler;
 import dev.aurelium.auraskills.bukkit.stat.BukkitStatManager;
 import dev.aurelium.auraskills.bukkit.storage.BukkitStorageFactory;
 import dev.aurelium.auraskills.bukkit.trait.BukkitTraitManager;
@@ -96,11 +98,13 @@ import dev.aurelium.auraskills.common.util.PlatformUtil;
 import dev.aurelium.auraskills.common.util.file.FileUtil;
 import dev.aurelium.slate.Slate;
 import dev.aurelium.slate.inv.InventoryManager;
+import dev.lone.itemsadder.api.ItemsAdder;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -391,14 +395,25 @@ public class AuraSkills extends JavaPlugin implements AuraSkillsPlugin {
         pm.registerEvents(new BlockLootHandler(this), this);
         pm.registerEvents(new FishingLootHandler(this), this);
         pm.registerEvents(new MobLootHandler(this), this);
-        pm.registerEvents(new RequirementListener(this), this);
         pm.registerEvents(new ItemListener(this), this);
         pm.registerEvents(new ArmorListener(configStringList(Option.MODIFIER_ARMOR_EQUIP_BLOCKED_MATERIALS)), this);
         pm.registerEvents(new ArmorModifierListener(this), this);
         pm.registerEvents(new RegionListener(this), this);
-        pm.registerEvents(new RegionBlockListener(this), this);
+
         pm.registerEvents(new PlayerDeath(this), this);
         pm.registerEvents(new JobsListener(this), this);
+
+        pm.registerEvents(new RequirementListener(this), this);
+        pm.registerEvents(new RegionBlockListener(this), this);
+
+        Plugin ia = this.getServer().getPluginManager().getPlugin("ItemsAdder");
+
+        if(ia != null && ia.isEnabled()) {
+            getLogger().info("ItemsAdder detected, enabling ItemsAdder support");
+            pm.registerEvents(new RequirementListener.ItemsAdderAddon(this), this);
+            pm.registerEvents(new BrewingLeveler.ItemsAdderAddon(this), this);
+            pm.registerEvents(new RegionBlockListener.ItemsAdderAddon(this), this);
+        }
     }
 
     public BukkitAudiences getAudiences() {
